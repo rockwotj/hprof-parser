@@ -1,3 +1,11 @@
+This is a fork of the Hprof Heap Dump parser that attempts to reduce memory
+usage by performing multiple passes over the hprof file. The first pass loads
+everything apart from the instance data, and the second pass loads the instance
+data. This is not particularly elegant, but it work. The original docs are
+included below.
+
+----------------------
+
 Hprof Heap Dump parser
 Eddie Aftandilian (eaftan@cs.tufts.edu)
 
