@@ -45,15 +45,25 @@ public class HprofParser {
 
   private RecordHandler handler;
   private HashMap<Long, ClassInfo> classMap;
-  private ArrayList<Instance> instanceList;
+
+  private int passNumber = 1;
 
   public HprofParser(RecordHandler handler) {
     this.handler = handler;
     classMap = new HashMap<Long, ClassInfo>();
-    instanceList = new ArrayList<Instance>();
-  } 
+  }
 
-  public void parse(DataInput in) throws IOException {
+  public void parseFirstPass(DataInput in) throws IOException {
+    passNumber = 1;
+    parse(in);
+  }
+
+  public void parseSecondPass(DataInput in) throws IOException {
+    passNumber = 2;
+    parse(in);
+  }
+
+  private void parse(DataInput in) throws IOException {
 
     /* The file format looks like this:
      *
@@ -244,7 +254,6 @@ public class HprofParser {
         while (bytesLeft > 0) {
           bytesLeft -= parseHeapDump(in, idSize);
         }
-        processInstances(idSize);
         handler.heapDumpEnd();
         break;
 
@@ -258,7 +267,6 @@ public class HprofParser {
 
       case 0x2c:
         // Heap dump end (of segments)
-        processInstances(idSize);
         handler.heapDumpEnd();
         break;
 
@@ -557,7 +565,9 @@ public class HprofParser {
          * we don't know how to interpret the values yet.  we have to
          * record the instances and process them at the end.
          */
-        instanceList.add(new Instance(l1, i1, l2, bArr1));
+        if (passNumber == 2) {
+          processInstance(new Instance(l1, i1, l2, bArr1), idSize);
+        }
 
         bytesRead += idSize * 2 + 8 + i2;
         break;
@@ -651,67 +661,65 @@ public class HprofParser {
     
   }
 
-  private void processInstances(int idSize) throws IOException {
-    for (Instance i: instanceList) {
-      ByteArrayInputStream bs = new ByteArrayInputStream(i.packedValues);
-      DataInputStream input = new DataInputStream(bs);
+  private void processInstance(Instance i, int idSize) throws IOException {
+    ByteArrayInputStream bs = new ByteArrayInputStream(i.packedValues);
+    DataInputStream input = new DataInputStream(bs);
 
-      ArrayList<Value<?>> values = new ArrayList<>();
+    ArrayList<Value<?>> values = new ArrayList<>();
 
-      // superclass of Object is 0
-      long nextClass = i.classObjId;
-      while (nextClass != 0) {
-        ClassInfo ci = classMap.get(nextClass);
-        nextClass = ci.superClassObjId;
-        for (InstanceField field: ci.instanceFields) {
-          Value<?> v = null;
-          switch (field.type) {
-            case OBJ:     // object
-              long vid = readId(idSize, input);
-              v = new Value<>(field.type, vid);
-              break;
-            case BOOL:     // boolean
-              boolean vbool = input.readBoolean();
-              v = new Value<>(field.type, vbool);
-              break;
-            case CHAR:     // char
-              char vc = input.readChar();
-              v = new Value<>(field.type, vc);
-              break;
-            case FLOAT:     // float
-              float vf = input.readFloat();
-              v = new Value<>(field.type, vf);
-              break;
-            case DOUBLE:     // double
-              double vd = input.readDouble();
-              v = new Value<>(field.type, vd);
-              break;
-            case BYTE:     // byte
-              byte vbyte = input.readByte();
-              v = new Value<>(field.type, vbyte);
-              break;
-            case SHORT:     // short
-              short vs = input.readShort();
-              v = new Value<>(field.type, vs);
-              break;
-            case INT:    // int
-              int vi = input.readInt();
-              v = new Value<>(field.type, vi);
-              break;
-            case LONG:    // long
-              long vl = input.readLong();
-              v = new Value<>(field.type, vl);
-              break;
-          }
-          values.add(v);
+    // superclass of Object is 0
+    long nextClass = i.classObjId;
+    while (nextClass != 0) {
+      ClassInfo ci = classMap.get(nextClass);
+      nextClass = ci.superClassObjId;
+      for (InstanceField field: ci.instanceFields) {
+        Value<?> v = null;
+        switch (field.type) {
+          case OBJ:     // object
+            long vid = readId(idSize, input);
+            v = new Value<>(field.type, vid);
+            break;
+          case BOOL:     // boolean
+            boolean vbool = input.readBoolean();
+            v = new Value<>(field.type, vbool);
+            break;
+          case CHAR:     // char
+            char vc = input.readChar();
+            v = new Value<>(field.type, vc);
+            break;
+          case FLOAT:     // float
+            float vf = input.readFloat();
+            v = new Value<>(field.type, vf);
+            break;
+          case DOUBLE:     // double
+            double vd = input.readDouble();
+            v = new Value<>(field.type, vd);
+            break;
+          case BYTE:     // byte
+            byte vbyte = input.readByte();
+            v = new Value<>(field.type, vbyte);
+            break;
+          case SHORT:     // short
+            short vs = input.readShort();
+            v = new Value<>(field.type, vs);
+            break;
+          case INT:    // int
+            int vi = input.readInt();
+            v = new Value<>(field.type, vi);
+            break;
+          case LONG:    // long
+            long vl = input.readLong();
+            v = new Value<>(field.type, vl);
+            break;
         }
+        values.add(v);
       }
-
-      Value<?>[] valuesArr = new Value[values.size()];
-      valuesArr = values.toArray(valuesArr);
-      handler.instanceDump(i.objId, i.stackTraceSerialNum, i.classObjId, 
-          valuesArr);
     }
+
+    Value<?>[] valuesArr = new Value[values.size()];
+    valuesArr = values.toArray(valuesArr);
+    handler.instanceDump(i.objId, i.stackTraceSerialNum, i.classObjId,
+        valuesArr);
   }
 
   private static long readId(int idSize, DataInput in) throws IOException {
