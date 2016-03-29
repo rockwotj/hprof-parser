@@ -39,10 +39,7 @@ import edu.tufts.eaftan.hprofparser.handler.examples.PrintHandler;
 import edu.tufts.eaftan.hprofparser.handler.RecordHandler;
 import edu.tufts.eaftan.hprofparser.parser.HprofParser;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.List;
 
 public class Parse {
@@ -81,16 +78,21 @@ public class Parse {
     HprofParser parser = new HprofParser(handler);
 
     try {
-      FileInputStream fs = new FileInputStream(argList.get(argList.size() - 1));
-      DataInputStream in = new DataInputStream(new BufferedInputStream(fs));
-
-      parser.parse(in);
-
+      DataInputStream in = getDataInputStream(argList);
+      parser.parseFirstPass(getDataInputStream(argList));
+      in.close();
+      in = getDataInputStream(argList);
+      parser.parseSecondPass(getDataInputStream(argList));
       in.close();
     } catch (IOException e) {
       System.err.println(e);
     } 
 
+  }
+
+  private static DataInputStream getDataInputStream(List<String> argList) throws FileNotFoundException {
+    FileInputStream fs = new FileInputStream(argList.get(argList.size() - 1));
+    return new DataInputStream(new BufferedInputStream(fs));
   }
 
 }

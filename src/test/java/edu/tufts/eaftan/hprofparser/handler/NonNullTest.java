@@ -13,10 +13,7 @@ import edu.tufts.eaftan.hprofparser.parser.datastructures.InstanceField;
 import edu.tufts.eaftan.hprofparser.parser.datastructures.Static;
 import edu.tufts.eaftan.hprofparser.parser.datastructures.Value;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.*;
 import java.net.URISyntaxException;
 
 /**
@@ -96,10 +93,17 @@ public class NonNullTest {
   public void argumentsMustBeNonNull() throws Exception {
     String testFilePath = getAbsolutePathForResource("java.hprof");
     HprofParser parser = new HprofParser(NULL_CHECKER_HANDLER);
-    FileInputStream fs = new FileInputStream(testFilePath);
-    DataInputStream in = new DataInputStream(new BufferedInputStream(fs));
-    parser.parse(in);
+    DataInputStream in = getDataInputStream(testFilePath);
+    parser.parseFirstPass(in);
     in.close();
+    in = getDataInputStream(testFilePath);
+    parser.parseSecondPass(in);
+    in.close();
+  }
+
+  private DataInputStream getDataInputStream(String testFilePath) throws FileNotFoundException {
+    FileInputStream fs = new FileInputStream(testFilePath);
+    return new DataInputStream(new BufferedInputStream(fs));
   }
 
 }

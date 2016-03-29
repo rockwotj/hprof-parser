@@ -55,15 +55,15 @@ public class HprofParser {
 
   public void parseFirstPass(DataInput in) throws IOException {
     passNumber = 1;
-    parse(in);
+    parseInternal(in);
   }
 
   public void parseSecondPass(DataInput in) throws IOException {
     passNumber = 2;
-    parse(in);
+    parseInternal(in);
   }
 
-  private void parse(DataInput in) throws IOException {
+  private void parseInternal(DataInput in) throws IOException {
 
     /* The file format looks like this:
      *

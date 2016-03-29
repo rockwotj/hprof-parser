@@ -27,13 +27,7 @@ import edu.tufts.eaftan.hprofparser.handler.RecordHandler;
 import edu.tufts.eaftan.hprofparser.handler.examples.statisticscollectinghandler.StatisticsCollectingHandler;
 import edu.tufts.eaftan.hprofparser.parser.HprofParser;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.util.List;
 
@@ -71,11 +65,18 @@ public class AllExampleHandlersTest {
     
     for (RecordHandler handler : ALL_HANDLERS) {
       HprofParser parser = new HprofParser(handler);
-      FileInputStream fs = new FileInputStream(testFilePath);
-      DataInputStream in = new DataInputStream(new BufferedInputStream(fs));
-      parser.parse(in);
+      DataInputStream in = getDataInputStream(testFilePath);
+      parser.parseFirstPass(in);
+      in.close();
+      in = getDataInputStream(testFilePath);
+      parser.parseSecondPass(in);
       in.close();
     }
+  }
+
+  private DataInputStream getDataInputStream(String testFilePath) throws FileNotFoundException {
+    FileInputStream fs = new FileInputStream(testFilePath);
+    return new DataInputStream(new BufferedInputStream(fs));
   }
 
 }
