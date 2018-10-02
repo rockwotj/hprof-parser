@@ -35,8 +35,8 @@ import java.util.HashMap;
  */
 public class PrintHandler extends NullRecordHandler {
 
-  private HashMap<Long, String> stringMap = new HashMap<Long, String>();
-  private HashMap<Long, ClassInfo> classMap = new HashMap<Long, ClassInfo>();
+  private HashMap<Long, String> stringMap = new HashMap<>();
+  private HashMap<Long, ClassInfo> classMap = new HashMap<>();
   
   /* handler for file header */
   
